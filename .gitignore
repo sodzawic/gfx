@@ -2,3 +2,7 @@ Makefile
 *.o
 *.a
 tags
+*.make
+appD
+obj
+Debug

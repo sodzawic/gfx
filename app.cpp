@@ -132,30 +132,31 @@ void calculateCarLightPosition() {
 			carPosition.y, carPosition.z + 6.0f * cosf(angleInRadians));
 }
 
-bool newCarPositionIsFine(float positionX, float positionZ) {
+bool newCarPositionIsFine(glm::vec3 pos) {
 	float cubeCarDistance = sqrtf(
-			powf(positionX - cubePosition.x, 2.0f)
-					+ powf(positionZ - cubePosition.z, 2.0f));
+			powf(pos.x - cubePosition.x, 2.0f)
+					+ powf(pos.z - cubePosition.z, 2.0f));
 	float cylinderCarDistance = sqrtf(
-			powf(positionX - cylinderPosition.x, 2.0f)
-					+ powf(positionZ - cylinderPosition.z, 2.0f));
+			powf(pos.x - cylinderPosition.x, 2.0f)
+					+ powf(pos.z - cylinderPosition.z, 2.0f));
 	float sphereCarDistance = sqrtf(
-			powf(positionX - spherePosition.x, 2.0f)
-					+ powf(positionZ - spherePosition.z, 2.0f));
+			powf(pos.x - spherePosition.x, 2.0f)
+					+ powf(pos.z - spherePosition.z, 2.0f));
 	return cubeCarDistance - cubePlusCarRadius > 0.0f
 			&& cylinderCarDistance - cylinderPlusCarRadius > 0.0f
 			&& sphereCarDistance - spherePlusCarRadius > 0.0f
-			&& positionX <= 50.0f - carRadius && positionZ <= 50.0f - carRadius
-			&& positionX >= carRadius - 50.0f && positionZ >= carRadius - 50.0f;
+			&& pos.x <= 50.0f - carRadius && pos.z <= 50.0f - carRadius
+			&& pos.x >= carRadius - 50.0f && pos.z >= carRadius - 50.0f;
 }
 
-void calculateCarPosition(float direction) {
+void calculateCarPosition(float direction, float height_change) {
 	float angleInRadians = Framework::DegToRad(carAngleInDegrees);
-	float newCarPositionZ = carPosition.z + direction * 0.5f * cosf(angleInRadians);
-	float newCarPositionX = carPosition.x + direction * 0.5f * sinf(angleInRadians);
-	if (newCarPositionIsFine(newCarPositionX, newCarPositionZ)) {
-		carPosition.z = newCarPositionZ;
-		carPosition.x = newCarPositionX;
+    glm::vec3 pos;
+	pos.z = carPosition.z + direction * 0.5f * cosf(angleInRadians);
+	pos.x = carPosition.x + direction * 0.5f * sinf(angleInRadians);
+    pos.y = carPosition.y + height_change;
+	if (newCarPositionIsFine(pos)) {
+        carPosition = pos;
 	}
 }
 
@@ -227,7 +228,7 @@ void initializeProgramsAndMeshes() {
 	try {
 		planeMesh = new Framework::Mesh("Plane.xml");
 		sunMesh = new Framework::Mesh("Sphere.xml");
-		carBodyMesh = new Framework::Mesh("Car.xml");
+		carBodyMesh = new Framework::Mesh("Ship.xml");
 		carLightMesh = new Framework::Mesh("Sphere.xml");
 		cubeMesh = new Framework::Mesh("Cube.xml");
 		cylinderMesh = new Framework::Mesh("Cylinder.xml");
@@ -430,11 +431,17 @@ void keyboard(unsigned char key, int x, int y) {
 		glutLeaveMainLoop();
 		return;
 	case 'w':
-		calculateCarPosition(1.0f);
+		calculateCarPosition(1.0f, 0.0f);
 		break;
 	case 's':
-		calculateCarPosition(-1.0f);
+		calculateCarPosition(-1.0f, 0.0f);
 		break;
+    case 'e':
+        calculateCarPosition(0, 1.0f);
+        break;
+    case 'q':
+        calculateCarPosition(0, -1.0f);
+        break;
 	case 'a':
 		carAngleInDegrees += 5.0f;
 		break;
