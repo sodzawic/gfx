@@ -135,18 +135,21 @@ void calculateCarLightPosition() {
 bool newCarPositionIsFine(glm::vec3 pos) {
 	float cubeCarDistance = sqrtf(
 			powf(pos.x - cubePosition.x, 2.0f)
+					+ powf(pos.y - cubePosition.y, 2.0f)
 					+ powf(pos.z - cubePosition.z, 2.0f));
 	float cylinderCarDistance = sqrtf(
 			powf(pos.x - cylinderPosition.x, 2.0f)
+					+ powf(pos.y - cylinderPosition.y, 2.0f)
 					+ powf(pos.z - cylinderPosition.z, 2.0f));
 	float sphereCarDistance = sqrtf(
 			powf(pos.x - spherePosition.x, 2.0f)
+					+ powf(pos.y - spherePosition.y, 2.0f)
 					+ powf(pos.z - spherePosition.z, 2.0f));
 	return cubeCarDistance - cubePlusCarRadius > 0.0f
 			&& cylinderCarDistance - cylinderPlusCarRadius > 0.0f
 			&& sphereCarDistance - spherePlusCarRadius > 0.0f
-			&& pos.x <= 50.0f - carRadius && pos.z <= 50.0f - carRadius
-			&& pos.x >= carRadius - 50.0f && pos.z >= carRadius - 50.0f;
+			&& pos.x <= 50.0f - carRadius && pos.y <= 50.0f - carRadius && pos.z <= 50.0f - carRadius
+			&& pos.x >= carRadius - 50.0f && pos.y >= 0.0f && pos.z >= carRadius - 50.0f;
 }
 
 void calculateCarPosition(float direction, float height_change) {
