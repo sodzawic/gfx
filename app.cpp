@@ -16,25 +16,7 @@
 #include "framework/MousePole.h"
 #include "framework/Timer.h"
 
-struct SimpleProgramData {
-    GLuint theProgram;
-    GLuint objectColorUniform;
-    GLuint modelToCameraMatrixUniform;
-};
-
-struct ProgramData: SimpleProgramData {
-    GLuint ufoLightPositionInModelSpaceUniform;
-    GLuint ufoLightIntensityUniform;
-    GLuint ufoAmbientIntensityUniform;
-
-    GLuint sunLightPositionInModelSpaceUniform;
-    GLuint sunLightIntensityUniform;
-    GLuint sunAmbientIntensityUniform;
-};
-
-struct ProjectionBlock {
-    glm::mat4 cameraToClipMatrix;
-};
+#include "app.h"
 
 float zNear = 1.0f;
 float zFar = 1000.0f;
@@ -129,13 +111,13 @@ glm::vec4 calculateSunPosition() {
     return glm::vec4(sunX, sunY, sunZ, 1.0f);
 }
 
-void calculateUfoLightPosition() {
+static void calculateUfoLightPosition() {
     float angleInRadians = Framework::DegToRad(ufoAngleInDegrees);
     ufoLightPosition = glm::vec3(ufoPosition.x + 6.0f * sinf(angleInRadians),
             ufoPosition.y, ufoPosition.z + 6.0f * cosf(angleInRadians));
 }
 
-bool newUfoPositionIsFine(glm::vec3 pos) {
+static bool newUfoPositionIsFine(glm::vec3 pos) {
     float cubeUfoDistance = sqrtf(
             powf(pos.x - cubePosition.x, 2.0f)
             + powf(pos.y - cubePosition.y, 2.0f)
@@ -151,11 +133,15 @@ bool newUfoPositionIsFine(glm::vec3 pos) {
     return cubeUfoDistance - cubePlusUfoRadius > 0.0f
         && cylinderUfoDistance - cylinderPlusUfoRadius > 0.0f
         && sphereUfoDistance - spherePlusUfoRadius > 0.0f
-        && pos.x <= 50.0f - ufoRadius && pos.y <= 50.0f - ufoRadius && pos.z <= 50.0f - ufoRadius
-        && pos.x >= ufoRadius - 50.0f && pos.y >= 0.0f && pos.z >= ufoRadius - 50.0f;
+        && pos.x <= 50.0f - ufoRadius
+        && pos.x >= ufoRadius - 50.0f
+        && pos.y <= 50.0f - ufoRadius
+        && pos.y >= 0.0f
+        && pos.z <= 50.0f - ufoRadius
+        && pos.z >= ufoRadius - 50.0f;
 }
 
-void calculateUfoPosition(float direction, float height_change) {
+static void calculateUfoPosition(float direction, float height_change) {
     float angleInRadians = Framework::DegToRad(ufoAngleInDegrees);
     glm::vec3 pos;
     pos.z = ufoPosition.z + direction * 0.5f * cosf(angleInRadians);
@@ -404,7 +390,6 @@ void display() {
                     ufoLightPositionInCameraSpace, sphereColor);
         }
     }
-
     glutPostRedisplay();
     glutSwapBuffers();
 }
