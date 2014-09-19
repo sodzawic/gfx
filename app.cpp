@@ -20,9 +20,9 @@ struct SimpleProgramData {
 };
 
 struct ProgramData: SimpleProgramData {
-	GLuint carLightPositionInModelSpaceUniform;
-	GLuint carLightIntensityUniform;
-	GLuint carAmbientIntensityUniform;
+	GLuint ufoLightPositionInModelSpaceUniform;
+	GLuint ufoLightIntensityUniform;
+	GLuint ufoAmbientIntensityUniform;
 
 	GLuint sunLightPositionInModelSpaceUniform;
 	GLuint sunLightIntensityUniform;
@@ -41,8 +41,8 @@ SimpleProgramData lightProgram;
 
 Framework::Mesh *planeMesh = NULL;
 Framework::Mesh *sunMesh = NULL;
-Framework::Mesh *carBodyMesh = NULL;
-Framework::Mesh *carLightMesh = NULL;
+Framework::Mesh *ufoBodyMesh = NULL;
+Framework::Mesh *ufoLightMesh = NULL;
 Framework::Mesh *cubeMesh = NULL;
 Framework::Mesh *cylinderMesh = NULL;
 Framework::Mesh *sphereMesh = NULL;
@@ -63,19 +63,19 @@ glutil::ViewScale viewScale = {
 glutil::ViewPole viewPole = glutil::ViewPole(initialViewData, viewScale,
 		glutil::MB_LEFT_BTN);
 
-glm::vec3 carPosition(0.0f, 0.5f, 0.0f);
-glm::vec3 carLightPosition(0.0f, 0.5f, 6.0f);
+glm::vec3 ufoPosition(0.0f, 0.5f, 0.0f);
+glm::vec3 ufoLightPosition(0.0f, 0.5f, 6.0f);
 glm::vec3 cubePosition = glm::vec3(9.0f, 0.0f, 19.0f);
 glm::vec3 cylinderPosition = glm::vec3(23.0f, -0.5f, -26.0f);
 glm::vec3 spherePosition = glm::vec3(-20.0f, 1.5f, -12.0f);
-float carAngleInDegrees = 0.0f;
+float ufoAngleInDegrees = 0.0f;
 
-glutil::ObjectData carObjectData = {
-		carPosition,
+glutil::ObjectData ufoObjectData = {
+		ufoPosition,
 		glm::fquat(1.0f, 0.0f, 0.0f, 0.0f)
 };
 
-glutil::ObjectPole carObjectPole = glutil::ObjectPole(carObjectData, 1.0f,
+glutil::ObjectPole ufoObjectPole = glutil::ObjectPole(ufoObjectData, 1.0f,
 		glutil::MB_RIGHT_BTN, &viewPole);
 
 const int projectionBlockIndex = 2;
@@ -83,13 +83,13 @@ GLuint projectionUniformBuffer = 0;
 
 glm::vec3 sunLightIntensity = glm::vec3(0.5f, 0.5f, 0.5f);
 glm::vec3 sunAmbientIntensity = glm::vec3(0.3f, 0.3f, 0.3f);
-glm::vec3 carLightIntensity = glm::vec3(0.8f, 0.8f, 0.8f);
-glm::vec3 carAmbientIntensity = glm::vec3(0.2f, 0.2f, 0.2f);
+glm::vec3 ufoLightIntensity = glm::vec3(0.8f, 0.8f, 0.8f);
+glm::vec3 ufoAmbientIntensity = glm::vec3(0.2f, 0.2f, 0.2f);
 
 glm::vec3 planeColor = glm::vec3(0.2f, 0.8f, 0.3f);
 glm::vec3 sunLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-glm::vec3 carBodyColor = glm::vec3(0.9f, 0.1f, 0.3f);
-glm::vec3 carLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+glm::vec3 ufoBodyColor = glm::vec3(0.9f, 0.1f, 0.3f);
+glm::vec3 ufoLightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 glm::vec3 cubeColor = glm::vec3(0.2f, 0.2f, 1.0f);
 glm::vec3 cylinderColor = glm::vec3(0.9f, 0.9f, 0.0f);
 glm::vec3 sphereColor = glm::vec3(0.9f, 0.2f, 0.7f);
@@ -98,10 +98,10 @@ float sunLightRadius = 50.0f;
 float sunLightMaxHeight = 120.0f;
 Framework::Timer sunLightTimer(Framework::Timer::TT_LOOP, 30.0f);
 
-float carRadius = 6.71f;
-float cubePlusCarRadius = 7.0711f + carRadius;
-float cylinderPlusCarRadius = 3.0f + carRadius;
-float spherePlusCarRadius = 4.5f + carRadius;
+float ufoRadius = 6.71f;
+float cubePlusUfoRadius = 7.0711f + ufoRadius;
+float cylinderPlusUfoRadius = 3.0f + ufoRadius;
+float spherePlusUfoRadius = 4.5f + ufoRadius;
 
 glm::vec4 calculateSunPosition() {
 	float currentLoopTime = sunLightTimer.GetAlpha();
@@ -126,40 +126,40 @@ glm::vec4 calculateSunPosition() {
 	return glm::vec4(sunX, sunY, sunZ, 1.0f);
 }
 
-void calculateCarLightPosition() {
-	float angleInRadians = Framework::DegToRad(carAngleInDegrees);
-	carLightPosition = glm::vec3(carPosition.x + 6.0f * sinf(angleInRadians),
-			carPosition.y, carPosition.z + 6.0f * cosf(angleInRadians));
+void calculateUfoLightPosition() {
+	float angleInRadians = Framework::DegToRad(ufoAngleInDegrees);
+	ufoLightPosition = glm::vec3(ufoPosition.x + 6.0f * sinf(angleInRadians),
+			ufoPosition.y, ufoPosition.z + 6.0f * cosf(angleInRadians));
 }
 
-bool newCarPositionIsFine(glm::vec3 pos) {
-	float cubeCarDistance = sqrtf(
+bool newUfoPositionIsFine(glm::vec3 pos) {
+	float cubeUfoDistance = sqrtf(
 			powf(pos.x - cubePosition.x, 2.0f)
 					+ powf(pos.y - cubePosition.y, 2.0f)
 					+ powf(pos.z - cubePosition.z, 2.0f));
-	float cylinderCarDistance = sqrtf(
+	float cylinderUfoDistance = sqrtf(
 			powf(pos.x - cylinderPosition.x, 2.0f)
 					+ powf(pos.y - cylinderPosition.y, 2.0f)
 					+ powf(pos.z - cylinderPosition.z, 2.0f));
-	float sphereCarDistance = sqrtf(
+	float sphereUfoDistance = sqrtf(
 			powf(pos.x - spherePosition.x, 2.0f)
 					+ powf(pos.y - spherePosition.y, 2.0f)
 					+ powf(pos.z - spherePosition.z, 2.0f));
-	return cubeCarDistance - cubePlusCarRadius > 0.0f
-			&& cylinderCarDistance - cylinderPlusCarRadius > 0.0f
-			&& sphereCarDistance - spherePlusCarRadius > 0.0f
-			&& pos.x <= 50.0f - carRadius && pos.y <= 50.0f - carRadius && pos.z <= 50.0f - carRadius
-			&& pos.x >= carRadius - 50.0f && pos.y >= 0.0f && pos.z >= carRadius - 50.0f;
+	return cubeUfoDistance - cubePlusUfoRadius > 0.0f
+			&& cylinderUfoDistance - cylinderPlusUfoRadius > 0.0f
+			&& sphereUfoDistance - spherePlusUfoRadius > 0.0f
+			&& pos.x <= 50.0f - ufoRadius && pos.y <= 50.0f - ufoRadius && pos.z <= 50.0f - ufoRadius
+			&& pos.x >= ufoRadius - 50.0f && pos.y >= 0.0f && pos.z >= ufoRadius - 50.0f;
 }
 
-void calculateCarPosition(float direction, float height_change) {
-	float angleInRadians = Framework::DegToRad(carAngleInDegrees);
+void calculateUfoPosition(float direction, float height_change) {
+	float angleInRadians = Framework::DegToRad(ufoAngleInDegrees);
     glm::vec3 pos;
-	pos.z = carPosition.z + direction * 0.5f * cosf(angleInRadians);
-	pos.x = carPosition.x + direction * 0.5f * sinf(angleInRadians);
-    pos.y = carPosition.y + height_change;
-	if (newCarPositionIsFine(pos)) {
-        carPosition = pos;
+	pos.z = ufoPosition.z + direction * 0.5f * cosf(angleInRadians);
+	pos.x = ufoPosition.x + direction * 0.5f * sinf(angleInRadians);
+    pos.y = ufoPosition.y + height_change;
+	if (newUfoPositionIsFine(pos)) {
+        ufoPosition = pos;
 	}
 }
 
@@ -208,12 +208,12 @@ ProgramData initializeProgram(std::string vertexShader,
 	programData.sunAmbientIntensityUniform = glGetUniformLocation(
 			programData.theProgram, "sunAmbientIntensity");
 
-	programData.carLightPositionInModelSpaceUniform = glGetUniformLocation(
-			programData.theProgram, "carLightPositionInModelSpace");
-	programData.carLightIntensityUniform = glGetUniformLocation(
-			programData.theProgram, "carLightIntensity");
-	programData.carAmbientIntensityUniform = glGetUniformLocation(
-			programData.theProgram, "carAmbientIntensity");
+	programData.ufoLightPositionInModelSpaceUniform = glGetUniformLocation(
+			programData.theProgram, "ufoLightPositionInModelSpace");
+	programData.ufoLightIntensityUniform = glGetUniformLocation(
+			programData.theProgram, "ufoLightIntensity");
+	programData.ufoAmbientIntensityUniform = glGetUniformLocation(
+			programData.theProgram, "ufoAmbientIntensity");
 
 	GLuint projectionBlock = glGetUniformBlockIndex(programData.theProgram,
 			"Projection");
@@ -231,8 +231,8 @@ void initializeProgramsAndMeshes() {
 	try {
 		planeMesh = new Framework::Mesh("Plane.xml");
 		sunMesh = new Framework::Mesh("Sphere.xml");
-		carBodyMesh = new Framework::Mesh("Ship.xml");
-		carLightMesh = new Framework::Mesh("Sphere.xml");
+		ufoBodyMesh = new Framework::Mesh("Ship.xml");
+		ufoLightMesh = new Framework::Mesh("Sphere.xml");
 		cubeMesh = new Framework::Mesh("Cube.xml");
 		cylinderMesh = new Framework::Mesh("Cylinder.xml");
 		sphereMesh = new Framework::Mesh("BigSphere.xml");
@@ -290,22 +290,22 @@ void init() {
 void renderMesh(const Framework::Mesh* mesh,
 		const glutil::MatrixStack& modelMatrix,
 		const glm::vec4& sunLightPositionInCameraSpace,
-		const glm::vec4& carLightPositionInCameraSpace,
+		const glm::vec4& ufoLightPositionInCameraSpace,
 		const glm::vec3& color) {
 
 	glm::mat4 invertedModelMatrix = glm::inverse(modelMatrix.Top());
 	glm::vec4 sunLightPositionInModelSpace = invertedModelMatrix
 			* sunLightPositionInCameraSpace;
-	glm::vec4 carLightPositionInModelSpace = invertedModelMatrix
-			* carLightPositionInCameraSpace;
+	glm::vec4 ufoLightPositionInModelSpace = invertedModelMatrix
+			* ufoLightPositionInCameraSpace;
 
 	glUseProgram(program.theProgram);
 	glUniformMatrix4fv(program.modelToCameraMatrixUniform, 1, GL_FALSE,
 			glm::value_ptr(modelMatrix.Top()));
 	glUniform3fv(program.sunLightPositionInModelSpaceUniform, 1,
 			glm::value_ptr(sunLightPositionInModelSpace));
-	glUniform3fv(program.carLightPositionInModelSpaceUniform, 1,
-			glm::value_ptr(carLightPositionInModelSpace));
+	glUniform3fv(program.ufoLightPositionInModelSpaceUniform, 1,
+			glm::value_ptr(ufoLightPositionInModelSpace));
 	glUniform4fv(program.objectColorUniform, 1,
 			glm::value_ptr(glm::vec4(color, 1.0f)));
 	mesh->Render();
@@ -330,7 +330,7 @@ void display() {
 	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (carBodyMesh && planeMesh && carLightMesh && cubeMesh && cylinderMesh
+	if (ufoBodyMesh && planeMesh && ufoLightMesh && cubeMesh && cylinderMesh
 			&& sphereMesh) {
 		glutil::MatrixStack modelMatrix;
 		modelMatrix.SetMatrix(viewPole.CalcMatrix());
@@ -338,24 +338,24 @@ void display() {
 		glm::vec4 sunPosition = calculateSunPosition();
 		glm::vec4 sunLightPositionInCameraSpace = modelMatrix.Top()
 				* sunPosition;
-		glm::vec4 carLightPositionInCameraSpace = modelMatrix.Top()
-				* glm::vec4(carLightPosition, 1.0f);
+		glm::vec4 ufoLightPositionInCameraSpace = modelMatrix.Top()
+				* glm::vec4(ufoLightPosition, 1.0f);
 
 		glUseProgram(program.theProgram);
 		glUniform4fv(program.sunLightIntensityUniform, 1,
 				glm::value_ptr(glm::vec4(sunLightIntensity, 1.0f)));
 		glUniform4fv(program.sunAmbientIntensityUniform, 1,
 				glm::value_ptr(glm::vec4(sunAmbientIntensity, 1.0f)));
-		glUniform4fv(program.carLightIntensityUniform, 1,
-				glm::value_ptr(glm::vec4(carLightIntensity, 1.0f)));
-		glUniform4fv(program.carAmbientIntensityUniform, 1,
-				glm::value_ptr(glm::vec4(carAmbientIntensity, 1.0f)));
+		glUniform4fv(program.ufoLightIntensityUniform, 1,
+				glm::value_ptr(glm::vec4(ufoLightIntensity, 1.0f)));
+		glUniform4fv(program.ufoAmbientIntensityUniform, 1,
+				glm::value_ptr(glm::vec4(ufoAmbientIntensity, 1.0f)));
 		glUseProgram(0);
 
 		{
 			glutil::PushStack push(modelMatrix);
 			renderMesh(planeMesh, modelMatrix, sunLightPositionInCameraSpace,
-					carLightPositionInCameraSpace, planeColor);
+					ufoLightPositionInCameraSpace, planeColor);
 		}
 
 		{
@@ -366,39 +366,39 @@ void display() {
 
 		{
 			glutil::PushStack push(modelMatrix);
-			modelMatrix.ApplyMatrix(carObjectPole.CalcMatrix());
-			modelMatrix.Translate(carPosition);
-			modelMatrix.RotateY(carAngleInDegrees);
-			renderMesh(carBodyMesh, modelMatrix, sunLightPositionInCameraSpace,
-					carLightPositionInCameraSpace, carBodyColor);
+			modelMatrix.ApplyMatrix(ufoObjectPole.CalcMatrix());
+			modelMatrix.Translate(ufoPosition);
+			modelMatrix.RotateY(ufoAngleInDegrees);
+			renderMesh(ufoBodyMesh, modelMatrix, sunLightPositionInCameraSpace,
+					ufoLightPositionInCameraSpace, ufoBodyColor);
 		}
 
 		{
 			glutil::PushStack push(modelMatrix);
-			modelMatrix.Translate(carLightPosition);
+			modelMatrix.Translate(ufoLightPosition);
 			modelMatrix.Scale(0.5f, 0.5f, 0.5f);
-			renderLightMesh(carLightMesh, modelMatrix, carLightColor);
+			renderLightMesh(ufoLightMesh, modelMatrix, ufoLightColor);
 		}
 
 		{
 			glutil::PushStack push(modelMatrix);
 			modelMatrix.Translate(cubePosition);
 			renderMesh(cubeMesh, modelMatrix, sunLightPositionInCameraSpace,
-					carLightPositionInCameraSpace, cubeColor);
+					ufoLightPositionInCameraSpace, cubeColor);
 		}
 
 		{
 			glutil::PushStack push(modelMatrix);
 			modelMatrix.Translate(cylinderPosition);
 			renderMesh(cylinderMesh, modelMatrix, sunLightPositionInCameraSpace,
-					carLightPositionInCameraSpace, cylinderColor);
+					ufoLightPositionInCameraSpace, cylinderColor);
 		}
 
 		{
 			glutil::PushStack push(modelMatrix);
 			modelMatrix.Translate(spherePosition);
 			renderMesh(sphereMesh, modelMatrix, sunLightPositionInCameraSpace,
-					carLightPositionInCameraSpace, sphereColor);
+					ufoLightPositionInCameraSpace, sphereColor);
 		}
 	}
 
@@ -426,33 +426,33 @@ void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 27:
 		delete planeMesh;
-		delete carBodyMesh;
-		delete carLightMesh;
+		delete ufoBodyMesh;
+		delete ufoLightMesh;
 		delete cubeMesh;
 		delete cylinderMesh;
 		delete sphereMesh;
 		glutLeaveMainLoop();
 		return;
 	case 'w':
-		calculateCarPosition(1.0f, 0.0f);
+		calculateUfoPosition(1.0f, 0.0f);
 		break;
 	case 's':
-		calculateCarPosition(-1.0f, 0.0f);
+		calculateUfoPosition(-1.0f, 0.0f);
 		break;
     case 'e':
-        calculateCarPosition(0, 1.0f);
+        calculateUfoPosition(0, 1.0f);
         break;
     case 'q':
-        calculateCarPosition(0, -1.0f);
+        calculateUfoPosition(0, -1.0f);
         break;
 	case 'a':
-		carAngleInDegrees += 5.0f;
+		ufoAngleInDegrees += 5.0f;
 		break;
 	case 'd':
-		carAngleInDegrees -= 5.0f;
+		ufoAngleInDegrees -= 5.0f;
 		break;
 	}
-	calculateCarLightPosition();
+	calculateUfoLightPosition();
 	glutPostRedisplay();
 }
 

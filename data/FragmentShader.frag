@@ -6,9 +6,9 @@ in vec3 positionInModelSpace;
 
 out vec4 outputColor;
 
-uniform vec3 carLightPositionInModelSpace;
-uniform vec4 carLightIntensity;
-uniform vec4 carAmbientIntensity;
+uniform vec3 ufoLightPositionInModelSpace;
+uniform vec4 ufoLightIntensity;
+uniform vec4 ufoAmbientIntensity;
 
 uniform vec3 sunLightPositionInModelSpace;
 uniform vec4 sunLightIntensity;
@@ -25,9 +25,9 @@ float calculateCosAngleIncidence(vec3 lightPositionInModelSpace)
 void main()
 {
 	float cosSunAngleIncidence = calculateCosAngleIncidence(sunLightPositionInModelSpace);
-	float cosCarAngleIncidence = calculateCosAngleIncidence(carLightPositionInModelSpace);
+	float cosUfoAngleIncidence = calculateCosAngleIncidence(ufoLightPositionInModelSpace);
 	
-	outputColor = (objectColor * carLightIntensity * cosCarAngleIncidence) +
+	outputColor = (objectColor * ufoLightIntensity * cosUfoAngleIncidence) +
 		(objectColor * sunLightIntensity * cosSunAngleIncidence) +
-		(objectColor * carAmbientIntensity);
+		(objectColor * ufoAmbientIntensity);
 }
