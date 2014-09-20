@@ -8,6 +8,7 @@
 #include <glload/gl_3_3.h>
 #include <glutil/glutil.h>
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <GL/freeglut.h>
 
@@ -64,11 +65,13 @@ glutil::ObjectPole ufoObjectPole = glutil::ObjectPole(ufoObjectData, 1.0f,
         glutil::MB_RIGHT_BTN, &viewPole);
 
 const int projectionBlockIndex = 2;
+const int unprojectionBlockIndex = 1;
 GLuint projectionUniformBuffer = 0;
+GLuint unprojectionUniformBuffer = 0;
 
-glm::vec3 sunLightIntensity = glm::vec3(0.5f, 0.5f, 0.5f);
+glm::vec3 sunLightIntensity = glm::vec3(5.0f, 5.0f, 5.0f);
 glm::vec3 sunAmbientIntensity = glm::vec3(0.3f, 0.3f, 0.3f);
-glm::vec3 ufoLightIntensity = glm::vec3(0.8f, 0.8f, 0.8f);
+glm::vec3 ufoLightIntensity = glm::vec3(8.0f, 8.0f, 8.0f);
 glm::vec3 ufoAmbientIntensity = glm::vec3(0.2f, 0.2f, 0.2f);
 
 glm::vec3 planeColor = glm::vec3(0.2f, 0.8f, 0.3f);
@@ -87,6 +90,9 @@ float ufoRadius = 6.71f;
 float cubePlusUfoRadius = 7.0711f + ufoRadius;
 float cylinderPlusUfoRadius = 3.0f + ufoRadius;
 float spherePlusUfoRadius = 4.5f + ufoRadius;
+
+static float g_fSunAttenuation = 0.001f;
+static float g_fUfoAttenuation = 0.05f;
 
 glm::vec4 calculateSunPosition() {
     float currentLoopTime = sunLightTimer.GetAlpha();
@@ -192,6 +198,8 @@ ProgramData initializeProgram(std::string vertexShader,
 
     programData.sunLightPositionInModelSpaceUniform = glGetUniformLocation(
             programData.theProgram, "sunLightPositionInModelSpace");
+    programData.cameraSpaceSunPosition = glGetUniformLocation(
+            programData.theProgram, "cameraSpaceSunPosition");
     programData.sunLightIntensityUniform = glGetUniformLocation(
             programData.theProgram, "sunLightIntensity");
     programData.sunAmbientIntensityUniform = glGetUniformLocation(
@@ -199,15 +207,24 @@ ProgramData initializeProgram(std::string vertexShader,
 
     programData.ufoLightPositionInModelSpaceUniform = glGetUniformLocation(
             programData.theProgram, "ufoLightPositionInModelSpace");
+    programData.cameraSpaceUfoPosition = glGetUniformLocation(
+            programData.theProgram, "cameraSpaceUfoPosition");
     programData.ufoLightIntensityUniform = glGetUniformLocation(
             programData.theProgram, "ufoLightIntensity");
     programData.ufoAmbientIntensityUniform = glGetUniformLocation(
             programData.theProgram, "ufoAmbientIntensity");
 
+    programData.sunAttenuationUnif = glGetUniformLocation(programData.theProgram, "sunAttenuation");
+    programData.ufoAttenuationUnif = glGetUniformLocation(programData.theProgram, "ufoAttenuation");
+
     GLuint projectionBlock = glGetUniformBlockIndex(programData.theProgram,
             "Projection");
     glUniformBlockBinding(programData.theProgram, projectionBlock,
             projectionBlockIndex);
+    GLuint unprojectionBlock = glGetUniformBlockIndex(programData.theProgram,
+            "UnProjection");
+    glUniformBlockBinding(programData.theProgram, unprojectionBlock,
+            unprojectionBlockIndex);
 
     return programData;
 }
@@ -266,12 +283,18 @@ void init() {
     glEnable(GL_DEPTH_CLAMP);
 
     glGenBuffers(1, &projectionUniformBuffer);
+    glGenBuffers(1, &unprojectionUniformBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, projectionUniformBuffer);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ProjectionBlock), NULL,
             GL_DYNAMIC_DRAW);
-
     glBindBufferRange(GL_UNIFORM_BUFFER, projectionBlockIndex,
             projectionUniformBuffer, 0, sizeof(ProjectionBlock));
+
+    glBindBuffer(GL_UNIFORM_BUFFER, unprojectionUniformBuffer);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(UnProjectionBlock), NULL,
+            GL_DYNAMIC_DRAW);
+    glBindBufferRange(GL_UNIFORM_BUFFER, unprojectionBlockIndex,
+            unprojectionUniformBuffer, 0, sizeof(UnProjectionBlock));
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -325,20 +348,28 @@ void display() {
         modelMatrix.SetMatrix(viewPole.CalcMatrix());
 
         glm::vec4 sunPosition = calculateSunPosition();
-        glm::vec4 sunLightPositionInCameraSpace = modelMatrix.Top()
+        const glm::vec4 &sunLightPositionInCameraSpace = modelMatrix.Top()
             * sunPosition;
-        glm::vec4 ufoLightPositionInCameraSpace = modelMatrix.Top()
+        const glm::vec4 &ufoLightPositionInCameraSpace = modelMatrix.Top()
             * glm::vec4(ufoLightPosition, 1.0f);
+        printf("%s\n", glm::to_string(ufoLightPositionInCameraSpace).c_str());
 
         glUseProgram(program.theProgram);
         glUniform4fv(program.sunLightIntensityUniform, 1,
                 glm::value_ptr(glm::vec4(sunLightIntensity, 1.0f)));
+        glUniform3fv(program.cameraSpaceSunPosition, 1,
+                glm::value_ptr(sunLightPositionInCameraSpace));
         glUniform4fv(program.sunAmbientIntensityUniform, 1,
                 glm::value_ptr(glm::vec4(sunAmbientIntensity, 1.0f)));
+
         glUniform4fv(program.ufoLightIntensityUniform, 1,
                 glm::value_ptr(glm::vec4(ufoLightIntensity, 1.0f)));
+        glUniform3fv(program.cameraSpaceUfoPosition, 1,
+                glm::value_ptr(ufoLightPositionInCameraSpace));
         glUniform4fv(program.ufoAmbientIntensityUniform, 1,
                 glm::value_ptr(glm::vec4(ufoAmbientIntensity, 1.0f)));
+        glUniform1f(program.sunAttenuationUnif, g_fSunAttenuation);
+        glUniform1f(program.ufoAttenuationUnif, g_fUfoAttenuation);
         glUseProgram(0);
 
         {
@@ -401,9 +432,16 @@ void reshape(int width, int height) {
     ProjectionBlock projectionData;
     projectionData.cameraToClipMatrix = perspectiveMatrix.Top();
 
+    UnProjectionBlock unprojData;
+    unprojData.clipToCameraMatrix = glm::inverse(perspectiveMatrix.Top());
+    unprojData.windowSize = glm::ivec2(width, height);
+
     glBindBuffer(GL_UNIFORM_BUFFER, projectionUniformBuffer);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ProjectionBlock),
             &projectionData);
+    glBindBuffer(GL_UNIFORM_BUFFER, unprojectionUniformBuffer);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(UnProjectionBlock),
+            &unprojData);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glViewport(0, 0, (GLsizei) width, (GLsizei) height);

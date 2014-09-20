@@ -4,5 +4,8 @@ Makefile
 tags
 *.make
 appD
+app
 obj
 Debug
+Release
+lib
